@@ -148,6 +148,8 @@ def api(method, path, body=None, timeout=30):
         headers["Content-Type"] = "application/json"
     if secret:
         headers[SECRET_HEADER] = secret
+    if os.environ.get("CTF_TESTER_KEY"):   # Linux Handbook testers only
+        headers["X-Tester-Key"] = os.environ["CTF_TESTER_KEY"]
     req = urllib.request.Request(BACKEND_URL + path, data=data, headers=headers, method=method)
     try:
         with urllib.request.urlopen(req, timeout=timeout) as resp:
@@ -570,9 +572,7 @@ def main():
         return
     print(f"{BGREEN}OK{RESET}")
     print(f"  {BCYAN}▸{RESET}  Reaching Linux Handbook...  ", end="", flush=True)
-    # CTF_SHOW_HIDDEN=1 also lists CTFs that aren't launched yet, for testing.
-    listing = "/api/ctfs?hidden=1" if os.environ.get("CTF_SHOW_HIDDEN") == "1" else "/api/ctfs"
-    status, ctfs = api("GET", listing, timeout=20)
+    status, ctfs = api("GET", "/api/ctfs", timeout=20)
     if status != 200 or not isinstance(ctfs, list):
         fail("Can't reach the CTF server.", f"Check your connection or try again later ({BACKEND_URL}).")
         return
