@@ -391,7 +391,7 @@ def show_leaderboard(ctf):
         rows.append(f"{colors.get(i, WHITE)}{row}{RESET}")
     print()
     box(f"🏆  {ctf['title'].upper()}: TOP 10", rows, width=w)
-    print(f"  {DIM}Full leaderboard: {CTF_PAGE}{RESET}\n")
+    print(f"  {DIM}Full leaderboard: {ctf.get('page') or CTF_PAGE}{RESET}\n")
 
 # ── Playing a CTF ────────────────────────────────────────────
 def print_hud(ctf, n, handle):
@@ -423,7 +423,7 @@ def print_victory(ctf, handle):
     box("WELL PLAYED", [
         cx(f"{BYELLOW}{BOLD}{handle}{RESET}"),
         cx(f"{DIM}Your name is on the leaderboard:{RESET}"),
-        cx(f"{BCYAN}{CTF_PAGE}{RESET}"),
+        cx(f"{BCYAN}{ctf.get('page') or CTF_PAGE}{RESET}"),
     ])
     ask(f"\n  {DIM}Press {BCYAN}Enter{DIM} to go back to the menu...{RESET}")
 
@@ -515,6 +515,7 @@ def menu(ctfs):
             lines.append(f"  {BCYAN}{i}{RESET}  {c['title']:<24} {state}")
         box("🏴  CAPTURE THE FLAG", lines)
         print(f"  {DIM}Type a number to play, {BCYAN}link{DIM} to link your account, or {BCYAN}quit{DIM}.{RESET}")
+        print(f"  {DIM}About the games: {CTF_PAGE}{RESET}")
 
         choice = ask(f"\n  {BMAGENTA}▶{RESET}  ")
         if choice is None or choice.lower() in ("quit", "exit", "q"):
