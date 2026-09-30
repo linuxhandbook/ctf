@@ -226,8 +226,15 @@ def choose_handle(link_code=None):
             time.sleep(0.8)
             return handle
         msg = error_message(status, payload)
-        if status in (403, 409):
-            print(f"  {BRED}✘  '{handle}': {msg}. Pick another.{RESET}\n")
+        if status == 409:   # someone has it (handles ignore case)
+            alt = f"{handle[:17]}_{secrets.randbelow(90) + 10}"
+            print(f"  {BRED}✘  '{handle}' is already taken.{RESET} Try another, like {BCYAN}{alt}{RESET}\n")
+            continue
+        if status == 403 and "taken" in msg:   # reserved name; don't suggest look-alikes
+            print(f"  {BRED}✘  '{handle}' is already taken.{RESET} Please pick another.\n")
+            continue
+        if status == 403:
+            print(f"  {BRED}✘  '{handle}' isn't allowed.{RESET} Please pick another.\n")
             continue
         fail(f"Couldn't claim the handle: {msg}")
         return None
