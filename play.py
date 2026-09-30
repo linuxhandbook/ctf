@@ -7,6 +7,8 @@ Linux Handbook server only checks flags and keeps the leaderboards.
     python3 play.py          play (picks up where you left off)
     python3 play.py link     link your handle to your Linux Handbook account
     python3 play.py -r       forget this computer's handle and start over
+    python3 play.py --delete-me
+                             delete your handle and all its scores from the server
 """
 
 import json
@@ -574,17 +576,52 @@ def reset_identity():
     if os.path.isfile(user_file_path):
         print(f"  {BYELLOW}▸{RESET}  This forgets this computer's key. Unless your handle is linked")
         print(f"     to a Linux Handbook account, you can't play as it again.")
+        print(f"     Your scores stay on the leaderboard. To remove them too, use {BCYAN}--delete-me{RESET}.")
         if (ask(f"  {BMAGENTA}Type 'yes' to continue {BCYAN}▶{RESET}  ") or "").lower() != "yes":
             print(f"  {DIM}Aborted.{RESET}\n")
             return
         os.remove(user_file_path)
     say("Done. The next run starts fresh.\n")
 
+def delete_me():
+    """Delete this handle, its scores and its account link from the server."""
+    global secret
+    secret = load_secret()
+    me, status = (get_me() if secret else (None, 404))
+    if me is None:
+        if status == 404:
+            say("This computer has no handle on the server. Nothing to delete.")
+            if secret:
+                os.remove(user_file_path)
+        return
+    games = [f"{cid}: {p['score']} pts" for cid, p in me["progress"].items() if p["score"]]
+    print()
+    box("⚠️  DELETE YOUR HANDLE", [
+        f"  Handle: {BCYAN}{BOLD}{me['handle']}{RESET}",
+        f"  Scores: {', '.join(games) if games else 'none yet'}",
+        f"  Linked to Linux Handbook: {'yes' if me['member'] else 'no'}",
+        "",
+        f"  {BRED}This deletes the handle, its progress and scores and{RESET}",
+        f"  {BRED}its account link, on every computer. There's no undo.{RESET}",
+    ])
+    typed = ask(f"\n  Type your handle to confirm {BCYAN}▶{RESET}  ")
+    if not typed or typed.lower() != me["handle"].lower():
+        print(f"  {DIM}That doesn't match. Nothing was deleted.{RESET}\n")
+        return
+    status, payload = api("DELETE", "/api/me", {"confirm": typed})
+    if status != 200:
+        fail(f"Couldn't delete it: {error_message(status, payload)}")
+        return
+    os.remove(user_file_path)
+    good(f"Deleted {BCYAN}{me['handle']}{RESET}. The name is free, and the next run starts fresh.\n")
+
 def main():
     global secret
     args = sys.argv[1:]
     if args and args[0] == "-r":
         return reset_identity()
+    if args and args[0] == "--delete-me":
+        return delete_me()
     if args and args[0] not in ("link",):
         return print(__doc__)
 

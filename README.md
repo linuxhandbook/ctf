@@ -110,7 +110,9 @@ If you link a Linux Handbook account, it also stores your member ID, so it can f
 
 **`CERTIFICATE_VERIFY_FAILED` on macOS.** Run *Install Certificates.command* from your Python folder in Applications.
 
-**I want a fresh start.** Run `python3 play.py -r`. If your handle isn't linked to an account, this gives it up for good.
+**I want a fresh start.** Run `python3 play.py -r`. It forgets your handle on this computer only. Your scores stay on the leaderboard, and if the handle isn't linked to an account, you can't play as it again.
+
+**Delete my handle and scores.** Run `python3 play.py --delete-me` and type your handle to confirm. It removes the handle, your progress and scores in every game, and any account link, from the server. The name becomes free for anyone.
 
 **Clean up afterwards.** Solved levels are removed automatically. To delete any leftovers, run `docker rmi $(docker images -q ghcr.io/linuxhandbook/ctf)`.
 
