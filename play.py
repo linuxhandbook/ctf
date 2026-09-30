@@ -202,12 +202,13 @@ def save_identity(handle=None):
     with os.fdopen(fd, "w") as f:
         json.dump({"secret": secret, "handle": handle}, f)
 
-def choose_handle(link_code=None):
-    """Ask for a handle until the server accepts one. Returns it, or None."""
+def choose_handle(link_code=None, first=None):
+    """Ask for a handle until the server accepts one. `first` is a handle the
+    player already typed. Returns the handle, or None."""
     print()
     print(f"  {DIM}2-20 characters: letters, digits, _ and -. It's shown on the leaderboard.{RESET}")
     while True:
-        raw = ask(f"  {BMAGENTA}HANDLE {BCYAN}▶{RESET}  ")
+        raw, first = (first, None) if first else (ask(f"  {BMAGENTA}HANDLE {BCYAN}▶{RESET}  "), None)
         if raw is None:
             return None
         handle = re.sub(r"[^A-Za-z0-9_-]", "", raw)[:20]
@@ -281,12 +282,19 @@ def welcome_new_computer():
         f"  {BCYAN}2{RESET}  I've played before: sign in with my",
         f"     Linux Handbook account",
     ])
+    print(f"\n  {DIM}Type {BCYAN}1{DIM} or {BCYAN}2{DIM} and press Enter.{RESET}")
     while True:
-        choice = ask(f"\n  {BMAGENTA}CHOOSE {BCYAN}▶{RESET}  ")
+        choice = ask(f"  {BMAGENTA}CHOOSE {BCYAN}▶{RESET}  ")
         if choice is None:
             return False
         if choice == "1":
             return choose_handle() is not None
+        if choice not in ("", "2"):
+            if re.fullmatch(r"[A-Za-z0-9_-]{2,20}", choice):
+                # Typed a name instead of 1: take it as their new handle.
+                return choose_handle(first=choice) is not None
+            print(f"  {BYELLOW}▸{RESET}  Type {BCYAN}1{RESET} if you're new, or {BCYAN}2{RESET} to sign in.\n")
+            continue
         if choice == "2":
             state, code = link_account()
             if state == "signed-in":
@@ -526,7 +534,16 @@ def menu(ctfs):
         print(f"  {DIM}Type a number to play, {BCYAN}link{DIM} to link your account, or {BCYAN}quit{DIM}.{RESET}")
         print(f"  {DIM}About the games: {CTF_PAGE}{RESET}")
 
-        choice = ask(f"\n  {BMAGENTA}▶{RESET}  ")
+        print()
+        while True:   # re-ask without redrawing, so the hint stays visible
+            choice = ask(f"  {BMAGENTA}▶{RESET}  ")
+            if choice is None or choice.lower() in ("quit", "exit", "q", "link") or (
+                    choice.isdigit() and 1 <= int(choice) <= len(ctfs)):
+                break
+            if choice:
+                numbers = "1" if len(ctfs) == 1 else f"1 to {len(ctfs)}"
+                print(f"  {BYELLOW}▸{RESET}  Type {BCYAN}{numbers}{RESET} to play, "
+                      f"{BCYAN}link{RESET} or {BCYAN}quit{RESET}.\n")
         if choice is None or choice.lower() in ("quit", "exit", "q"):
             return
         if choice.lower() == "link":
@@ -538,8 +555,6 @@ def menu(ctfs):
             elif state not in ("cancelled",):
                 fail("Linking didn't finish.")
             ask(f"  {DIM}Press {BCYAN}Enter{DIM}...{RESET}")
-            continue
-        if not choice.isdigit() or not 1 <= int(choice) <= len(ctfs):
             continue
         c = ctfs[int(choice) - 1]
         p = me["progress"].get(c["id"], {"level": 1})
